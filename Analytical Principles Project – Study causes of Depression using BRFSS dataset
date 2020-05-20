@@ -1,0 +1,312 @@
+library(readxl)
+library(readr)
+Brfss2016State <- read_csv("~/Downloads/Brfss2016State.csv")
+#Brfss2016State <- read_excel( .xlsx")
+View(Brfss2016State)
+
+str(Brfss2016State)
+summary(Brfss2016State)
+nrow(Brfss2016State)
+##########################################################################################
+                            ## DATA CLEANING ##
+#########################################################################################
+
+#ADDEPEV2 : Ever told you had a depressive disorder
+# 1- Yes 2-No 7-Don't know/not sure 9-Refused
+# select only yes or no data
+Brfss2016State <- subset(Brfss2016State, ADDEPEV2 == 1 | ADDEPEV2 == 2)
+#GENHLTH : Would you say that in general your health is
+# 1- Excellent 2-Very Good 3-Good 4-Fair 5-Poor 7-Don't know 9-Refused
+Brfss2016State <- subset(Brfss2016State, GENHLTH < 7)
+#EXERANY2: did you participate in any physical activities or exercises?
+# 1- Yes 2-No 7-Don't know/not sure 9-Refused
+Brfss2016State <- subset(Brfss2016State, EXERANY2 == 1 | EXERANY2 == 2)
+#SEX 
+#1-Male 2-Female 9-Refuse
+Brfss2016State <- subset(Brfss2016State, SEX < 3)
+#Marital 
+#1-Married 2-Divorced 3-Widowed 4-Separated 5-Never Married 6-A member of an unmarried couple
+Brfss2016State <- subset(Brfss2016State, MARITAL < 7)
+#EDUCA - What is the highest grade or year of school you completed?
+Brfss2016State <- subset(Brfss2016State, EDUCA < 7)
+#EMPLOY1-Are you currently?
+Brfss2016State <- subset(Brfss2016State, EMPLOY1 < 9)
+#INCOME2 - Income categories
+Brfss2016State <- subset(Brfss2016State, INCOME2 < 9)
+#_RACE 
+Brfss2016State <- subset(Brfss2016State, `_RACE` < 9)
+summary(Brfss2016State)
+nrow(Brfss2016State)
+
+State <- Brfss2016State_1_$`_STATE`
+Health <- Brfss2016State$GENHLTH
+Exercise <- Brfss2016State$EXERANY2
+SleepTime <- Brfss2016State$SLEPTIM1
+Depress <- Brfss2016State$ADDEPEV2
+Sex <- Brfss2016State$SEX
+Marital <-Brfss2016State$MARITAL
+Education <- Brfss2016State$EDUCA
+Employ <- Brfss2016State$EMPLOY1
+Income <- Brfss2016State$INCOME2
+Race <- Brfss2016State$`_RACE`
+Age <- Brfss2016State$`_AGE_G`
+BMI <- Brfss2016State$`_BMI5`
+BMICat <- Brfss2016State$`_BMI5CAT`
+
+df_brfss <- data.frame(State,Health,Exercise,SleepTime,Depress,Sex,Marital,Education,
+                       Employ,Income,Race,Age,BMI,BMICat )
+
+#Convert numeric to string
+
+StrState <- ifelse(State == 9,"Connecticut"
+                   ,ifelse(State == 12,"Florida"
+                           ,ifelse(State == 13,"Georgia"
+                                   ,ifelse(State == 25,"Massachusetts"
+                                           ,ifelse(State == 34,"New Jersey"
+                                                   ,ifelse(State == 36,"New York"
+                                                           ,ifelse(State == 37,"North Carolina"
+                                                              ,ifelse(State == 45,"South Carolina","Virginia"))))))))
+
+dfStrDepress <- ifelse(Depress == 1, "Yes","No")
+StrIncome <-  ifelse(Income == 1, "Less than $10,000",
+              ifelse(Income == 2, "Less than $15,000",
+                  ifelse(Income == 3, "Less than $20,000",
+                         ifelse(Income == 4, "Less than $25,000",
+                                ifelse(Income == 5, "Less than $35,000",
+                                       ifelse(Income == 6, "Less than $50,000",
+                                              ifelse(Income == 7, "Less than $75,000","More than $75,000")))))))
+StrHealth <- ifelse(Health == 1,"Excellent", 
+                    ifelse(Health == 2,"Very Good",
+                           ifelse(Health == 3,"Good",
+                                  ifelse(Health == 4,"Fair","Poor"))))
+
+StrExercise <- ifelse(Exercise == 1,"Yes","No")
+StrSex <- ifelse(Sex == 1,"Male","Female")
+StrMarital <- ifelse(Marital == 1,"Married"
+                     ,ifelse(Marital == 2,"Divorced"
+                             ,ifelse(Marital == 3,"Widowed"
+                                  ,ifelse(Marital == 4,"Separated"
+                                          ,ifelse(Marital == 5,"Never married","A member of an unmarried couple")))))
+                             
+StrEducation <- ifelse(Education == 1,"Never attended school"
+                       ,ifelse(Education == 2,"Elementary"
+                               ,ifelse(Education == 3,"Some high school"
+                                       ,ifelse(Education == 4,"High school graduate"
+                                               ,ifelse(Education == 5,"Some college","College graduate")))))
+
+StrEmploy <-  ifelse(Employ == 1, "Employed for wages",
+                        ifelse(Employ == 2, "Self Employed",
+                               ifelse(Employ == 3, "Out of work for 1 year or more ",
+                                      ifelse(Employ == 4, "Out of work for less than 1 year",
+                                             ifelse(Employ == 5, "A homemaker",
+                                                    ifelse(Employ == 6, "A student",
+                                                           ifelse(Employ == 7, "Retired","Unable to work")))))))
+
+StrRace <-  ifelse(Race == 1, "White",
+                     ifelse(Race == 2, "Black",
+                            ifelse(Race == 3, "American Indian",
+                                   ifelse(Race == 4, "Asian",
+                                          ifelse(Race == 5, "Native Hawaiian",
+                                                 ifelse(Race == 6, "Other race",
+                                                        ifelse(Race == 7, "Multiracial","Hispanic")))))))
+
+StrAge <- ifelse(Age == 1,"Age 18-24", 
+                    ifelse(Age == 2,"Age 25-34",
+                           ifelse(Health == 3,"Age 35-44",
+                                  ifelse(Health == 4,"Age 45-54",
+                                         ifelse(Age == 5,"Age 55-64","Age 65 or older")))))
+
+StrBMICat <- ifelse(BMICat == 1,"Underweight"
+                    ,ifelse(BMICat == 2,"Normal weight"
+                            ,ifelse(BMICat == 3,"Overweight","Obese")))
+
+
+
+library(ggplot2)
+#barplot Depressive disorder VS State
+ggplot(df_brfss, aes(x = df_brfss$State, fill = factor(StrDepress))) +
+  geom_bar() +
+  xlab("State") +
+  ylab("Total Count") +
+  labs(fill = "Depress") +
+  theme(text=element_text(family="Garamond", size=14)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+
+#boxplot Depressive disorder VS Income
+ggplot(df_brfss, aes(StrDepress, StrIncome)) + 
+  geom_boxplot(aes(group = cut_width(Depress, 0.25)),fill='mistyrose') +
+  ggtitle("Boxplot: Depress VS Income") +
+  theme(text=element_text(family="Garamond", size=14))
+#barplot Depressive disorder VS Income  
+ggplot(df_brfss, aes(x = StrIncome, fill = factor(StrDepress))) +
+  geom_bar() +
+  xlab("Income Category") +
+  ylab("Total Count") +
+  labs(fill = "Depress") +
+  theme(text=element_text(family="Garamond", size=14)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# boxplot Depressive disorder VS General Health
+ggplot(df_brfss, aes(StrDepress, StrHealth)) + 
+  geom_boxplot(aes(group = cut_width(Depress, 0.25)),fill='mistyrose') +
+  ggtitle("Boxplot: Depress VS General Health") +
+  theme(text=element_text(family="Garamond", size=14))
+#barplot Depressive disorder VS General Health
+ggplot(df_brfss, aes(x = StrHealth, fill = factor(StrDepress))) +
+  geom_bar() +
+  xlab("General Health") +
+  ylab("Total Count") +
+  labs(fill = "Depress") +
+  theme(text=element_text(family="Garamond", size=14)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# boxplot Depressive disorder VS Exercise
+ggplot(df_brfss, aes(StrDepress, StrExercise)) + 
+  geom_boxplot(aes(group = cut_width(Depress, 0.25)),fill='mistyrose') +
+  ggtitle("Boxplot: Depress VS Exercise") +
+  theme(text=element_text(family="Garamond", size=14))
+#barplot Depressive disorder VS Exercise
+ggplot(df_brfss, aes(x = StrExercise, fill = factor(StrDepress))) +
+  geom_bar() +
+  xlab("Exercise regularly") +
+  ylab("Total Count") +
+  labs(fill = "Depress") +
+  theme(text=element_text(family="Garamond", size=14)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+#barplot Depressive disorder VS SleepTime
+ggplot(df_brfss, aes(StrDepress, SleepTime)) + 
+  geom_boxplot(aes(group = cut_width(Depress, 0.25)),fill='mistyrose') +
+  ggtitle("Boxplot: Depress VS Sleep time") +
+  theme(text=element_text(family="Garamond", size=14))
+
+ggplot(df_brfss, aes(x = SleepTime, fill = factor(StrDepress))) +
+  geom_bar() +
+  xlab("Sleep hours") +
+  ylab("Total Count") +
+  labs(fill = "Depress") +
+  theme(text=element_text(family="Garamond", size=14)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+# boxplot Depressive disorder VS Sex
+ggplot(df_brfss, aes(StrDepress, StrSex)) + 
+  geom_boxplot(aes(group = cut_width(Depress, 0.25)),fill='mistyrose') +
+  ggtitle("Boxplot: Depress VS Sex") +
+  theme(text=element_text(family="Garamond", size=14))
+#barplot Depressive disorder VS Sex
+ggplot(df_brfss, aes(x = StrSex, fill = factor(StrDepress))) +
+  geom_bar() +
+  xlab("Sex") +
+  ylab("Total Count") +
+  labs(fill = "Depress") +
+  theme(text=element_text(family="Garamond", size=14)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# boxplot Depressive disorder VS Marital
+ggplot(Brfss2016State, aes(StrDepress, StrMarital)) + 
+  geom_boxplot(aes(group = cut_width(Depress, 0.25)),fill='mistyrose') +
+  ggtitle("Boxplot: Depress VS Marital") +
+  theme(text=element_text(family="Garamond", size=14))
+#barplot Depressive disorder VS Marital
+ggplot(df_brfss, aes(x = StrMarital, fill = factor(StrDepress))) +
+  geom_bar() +
+  xlab("Marital") +
+  ylab("Total Count") +
+  labs(fill = "Depress") +
+  theme(text=element_text(family="Garamond", size=14)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# boxplot Depressive disorder VS Education
+ggplot(df_brfss, aes(StrDepress, StrEducation)) + 
+  geom_boxplot(aes(group = cut_width(Depress, 0.25)),fill='mistyrose') +
+  ggtitle("Boxplot: Depress VS Education") +
+  theme(text=element_text(family="Garamond", size=14))
+#barplot Depressive disorder VS Education
+ggplot(df_brfss, aes(x = StrEducation, fill = factor(StrDepress))) +
+  geom_bar() +
+  xlab("Education") +
+  ylab("Total Count") +
+  labs(fill = "Depress") +
+  theme(text=element_text(family="Garamond", size=14)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# boxplot Depressive disorder VS Employed
+ggplot(df_brfss, aes(StrDepress, StrEmploy)) + 
+  geom_boxplot(aes(group = cut_width(Depress, 0.25)),fill='mistyrose') +
+  ggtitle("Boxplot: Depress VS Employed") +
+  theme(text=element_text(family="Garamond", size=14))
+#barplot Depressive disorder VS Employment
+ggplot(df_brfss, aes(x = StrEmploy, fill = factor(StrDepress))) +
+  geom_bar() +
+  xlab("Employment") +
+  ylab("Total Count") +
+  labs(fill = "Depress") +
+  theme(text=element_text(family="Garamond", size=14)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# boxplot Depressive disorder VS Race
+ggplot(df_brfss, aes(StrDepress, StrRace)) + 
+  geom_boxplot(aes(group = cut_width(Depress, 0.25)),fill='mistyrose') +
+  ggtitle("Boxplot: Depress VS Race") +
+  theme(text=element_text(family="Garamond", size=14))
+#barplot Depressive disorder VS Race
+ggplot(df_brfss, aes(x = StrRace, fill = factor(StrDepress))) +
+  geom_bar() +
+  xlab("Race") +
+  ylab("Total Count") +
+  labs(fill = "Depress") +
+  theme(text=element_text(family="Garamond", size=14)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+#ANOVA
+
+#H0: The average sleep time is equal across all levels of anxiety disorder.
+#HA: The average sleep time varies by the level of anxiety disoder. The averages are different of any one pair.
+
+sleep_anova <- aov(Brfss2016State$SLEPTIM1~Brfss2016State$ADDEPEV2)
+anova(sleep_anova)
+
+
+
+
+bmi_anova <- aov(Brfss2016State$`_BMI5`~Brfss2016State$ADDEPEV2)
+anova(bmi_anova)
+
+summary(sleep_anova)
+
+tbl3 <- table(Brfss2016State$EXERANY2, Brfss2016State$ADDEPEV2)
+chisq.test(tbl3)
+
+tbl4 <- table(Brfss2016State$SEX, Brfss2016State$ADDEPEV2)
+chisq.test(tbl4)
+
+tbl5 <- table(Brfss2016State$GENHLTH, Brfss2016State$ADDEPEV2)
+chisq.test(tbl5)
+
+tbl6 <- table(Brfss2016State$MARITAL, Brfss2016State$ADDEPEV2)
+chisq.test(tbl6)
+
+tbl1 <- table(Brfss2016State$EDUCA, Brfss2016State$ADDEPEV2)
+chisq.test(tbl1)
+
+tbl7 <- table(Brfss2016State$EMPLOY1, Brfss2016State$ADDEPEV2)
+chisq.test(tbl7)
+
+tbl8 <- table(Brfss2016State$INCOME2, Brfss2016State$ADDEPEV2)
+chisq.test(tbl8)
+
+tbl9 <- table(Brfss2016State$`_BMI5CAT`, Brfss2016State$ADDEPEV2)
+chisq.test(tbl9)
+
+tbl10 <- table(Brfss2016State$`_STATE`, Brfss2016State$ADDEPEV2)
+chisq.test(tbl10)
+
+tbl11 <- table(Brfss2016State$`_RACE`, Brfss2016State$ADDEPEV2)
+chisq.test(tbl11)
+
+tbl12 <- table(Brfss2016State$`_AGE_G`, Brfss2016State$ADDEPEV2)
+chisq.test(tbl12)
+
+
+
