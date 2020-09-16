@@ -1,0 +1,271 @@
+---
+title: "Showwcase_analysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(readr)
+library(readxl)
+library(ggplot2)
+library(plyr)
+library(dplyr)
+library(describer)
+library(forcats)
+library(lubridate)
+library(corrplot)
+```
+
+```{r}
+showwcase_sessions <- read_csv("C:/Users/prath/Documents/Crowd Doing/Showwcase files/showwcase_sessions.csv")
+```
+## Descriptive analysis
+
+```{r}
+head(showwcase_sessions)
+```
+
+```{r}
+str(showwcase_sessions)
+```
+```{r}
+describe(showwcase_sessions)
+summary(showwcase_sessions)
+```
+
+### Converting boolean values in project added, likes given, inactive status, and bug occured to 0 or 1 in order to analyze the data.
+
+"1" = "TRUE"
+"0" = "FALSE"
+
+
+```{r}
+
+showwcase_sessions$ID <- seq.int(nrow(showwcase_sessions))
+## Recoding showwcase_sessions$projects_added into showwcase_sessions$projects_added_rec
+showwcase_sessions$projects_added <- as.factor(showwcase_sessions$projects_added) 
+showwcase_sessions$projects_added <- fct_recode(showwcase_sessions$projects_added,
+  "1" = "TRUE",
+  "0" = "FALSE")
+
+showwcase_sessions$likes_given <- as.factor(showwcase_sessions$likes_given) 
+showwcase_sessions$likes_given <- fct_recode(showwcase_sessions$likes_given,
+  "1" = "TRUE",
+  "0" = "FALSE")
+
+showwcase_sessions$comment_given <- as.factor(showwcase_sessions$comment_given) 
+showwcase_sessions$comment_given <- fct_recode(showwcase_sessions$comment_given,
+  "1" = "TRUE",
+  "0" = "FALSE")
+
+showwcase_sessions$inactive_status <- as.factor(showwcase_sessions$inactive_status) 
+showwcase_sessions$inactive_status <- fct_recode(showwcase_sessions$inactive_status,
+  "1" = "TRUE",
+  "0" = "FALSE")
+
+showwcase_sessions$bug_occured <- as.factor(showwcase_sessions$bug_occured) 
+showwcase_sessions$bug_occured <- fct_recode(showwcase_sessions$bug_occured,
+  "1" = "TRUE",
+  "0" = "FALSE")
+
+```
+
+```{r}
+summary(showwcase_sessions)
+```
+### Extract day and day number from the login date.
+
+```{r}
+showwcase_sessions$login_date<- as.Date(showwcase_sessions$login_date,  "%m/%d/%Y")
+
+showwcase_sessions$Day <- wday(showwcase_sessions$login_date)
+showwcase_sessions$Dayofmonth <- weekdays(showwcase_sessions$login_date)
+
+```
+
+## Exploratory data analysis
+
+### User segmentation analysis
+
+#### 1. Analyze how many number of users used projects added, likes given and comment given. Filtering these features as 1. There are 33 users who used all the features of the platform. There are total 48 users.  
+
+```{r}
+User_segmentation <- showwcase_sessions %>% 
+  select(customer_id,projects_added,likes_given,comment_given) %>%
+  filter(projects_added == 1 & likes_given == 1 & comment_given == 1) %>%
+  group_by(customer_id) %>% 
+  summarise(customer_id_summary = n()) %>%
+  arrange(desc(customer_id_summary))
+
+
+str(User_segmentation)
+  
+```
+
+##### 2.How many unique users visited in october month
+
+```{r}
+Unique_users <- showwcase_sessions %>%  
+select(customer_id) %>%
+  group_by(customer_id) %>% 
+  summarise(customer_id_summary = n()) %>%
+  arrange(desc(customer_id_summary))
+```
+ 
+##### 3. Analyze which feature has been mostly by the user. The most used feature used by the user is Project added and then comments given. Likes given is comparitively less used than the other two.
+
+Project_Added = 227
+Comments_given = 225
+Likes_given = 213
+
+
+```{r}
+Project_added_feature <- showwcase_sessions %>% 
+  select(customer_id,projects_added) %>%
+  filter(projects_added == 1 ) %>%
+  group_by(customer_id) %>% 
+  summarise(customer_id_summary = n()) %>%
+  arrange(desc(customer_id_summary)) %>%
+  mutate(total = sum(customer_id_summary))
+
+comment_given_feature <- showwcase_sessions %>% 
+  select(customer_id,comment_given) %>%
+  filter(comment_given == 1 ) %>%
+  group_by(customer_id) %>% 
+  summarise(customer_id_summary = n()) %>%
+  arrange(desc(customer_id_summary)) %>%
+  mutate(total = sum(customer_id_summary))
+
+likes_given_feature <- showwcase_sessions %>% 
+  select(customer_id,likes_given) %>%
+  filter(likes_given == 1 ) %>%
+  group_by(customer_id) %>% 
+  summarise(customer_id_summary = n()) %>%
+  arrange(desc(customer_id_summary)) %>%
+  mutate(total = sum(customer_id_summary))
+```
+ 
+##### 4. Analyze trends and patterns in the top five users.
+
+```{r}
+
+User_newsegmentation <- showwcase_sessions %>% 
+  select(customer_id,projects_added,likes_given,comment_given,session_projects_added,session_likes_given,session_comments_given) %>%  
+  group_by(customer_id) %>%
+  filter(projects_added == 1 & likes_given == 1 & comment_given == 1)
+
+
+library(data.table)
+Session_featues <- data.table(User_newsegmentation)
+Session_featues <- Session_featues[,list(projects_added_per_user = sum(session_projects_added), comments_added_per_user = sum(session_comments_given), likes_added_per_user = sum(session_likes_given), freq = .N), by = c("customer_id")]
+
+
+```
+
+```{r}
+ggplot(Session_featues, aes(x= Session_featues$projects_added_per_user)) + geom_histogram(bins = 30, fill = "blue") + xlab("Total projects added per user")
+
+ggplot(showwcase_sessions, aes(x=showwcase_sessions$Dayofmonth,y=showwcase_sessions$ID)) + geom_col(stat = "count", fill = "blue")+ xlab("Day of month") + ylab("No. of USERS") + ggtitle("No. of users visited on days")
+```
+
+```{r}
+ggplot(showwcase_sessions, aes(x=showwcase_sessions$Dayofmonth,y=showwcase_sessions$session_projects_added)) + geom_col(stat = "count", fill = "blue")+ xlab("Day of month") + ylab("No. of projects added") + ggtitle("No. of projects added on days")
+```
+
+```{r}
+ggplot(showwcase_sessions, aes(x=showwcase_sessions$Dayofmonth,y=showwcase_sessions$session_likes_given)) + geom_col(stat = "count", fill = "blue")+ xlab("Day of month") + ylab("No. of likes added") + ggtitle("No. of likes given on days")
+```
+```{r}
+ggplot(showwcase_sessions, aes(x=showwcase_sessions$Dayofmonth,y=showwcase_sessions$session_comments_given)) + geom_col(stat = "count", fill = "blue")+ xlab("Day of month") + ylab("No. of comments given") + ggtitle("No. of comments given on days")
+```
+
+#### Most of the features are added on saturday when most of the users are free. 
+
+```{r}
+ggplot(showwcase_sessions, aes(x=showwcase_sessions$Dayofmonth,y=showwcase_sessions$bugs_in_session)) + geom_col(stat = "count", fill = "blue")+ xlab("Day of month") + ylab("No. of bugs") + ggtitle("No. of bugs given on days")
+```
+#### As we can see that most of the number of bugs are reported on saturday and sunday when many people are logging in and using features.
+
+
+```{r}
+## convert seconds to minutes  for proper analysis
+
+showwcase_sessions$sessionminute <- showwcase_sessions$session_duration / 60
+showwcase_sessions$inactiveminute <- showwcase_sessions$inactive_duration / 60
+
+showwcase_sessions$sessionminute <-round(showwcase_sessions$sessionminute, digits=2)
+showwcase_sessions$inactiveminute <-round(showwcase_sessions$inactiveminute, digits=2)
+
+ggplot(showwcase_sessions, aes(x=showwcase_sessions$Dayofmonth, y = showwcase_sessions$sessionminute)) + geom_col(stat = "count", fill = "blue")+ xlab("Day of month") + ylab("Time spent in minutes") + ggtitle("Session duration on days")
+```
+
+#### Most of the time (in minutes) is spent on Saturday and Tuesday which maybe due to bugs in the system
+
+```{r}
+top_users <- showwcase_sessions %>% 
+  select(session_projects_added,session_likes_given,session_comments_given,session_duration,customer_id,sessionminute,inactiveminute, Dayofmonth) %>% 
+  group_by(customer_id, Dayofmonth) %>% 
+  summarise(total_projects = sum(session_projects_added), total_comments = sum(session_comments_given), total_likes = sum(session_likes_given), total_minutes = sum(sessionminute),total_inactive_minute = sum(inactiveminute)) %>%
+  arrange(desc(total_minutes))
+
+
+top_users %>% top_n(10)  # highest values  
+```
+#### Export data to csv
+
+```{r}
+write.csv(showwcase_sessions, file = "showwcase_sessions_new.csv")
+```
+
+## Machine learning
+
+#### Machine learning for preddicting factors that can affect the session duration. Session duration is a depedent variable and others as independent variable
+
+#### Correlation
+
+```{r}
+
+
+top_users_corr <- showwcase_sessions %>% 
+select(session_projects_added,session_likes_given,session_comments_given,session_duration,customer_id,sessionminute,inactiveminute) %>% 
+  filter(!is.na(session_likes_given)) %>%
+  group_by(customer_id) %>% 
+  summarise(total_projects = sum(session_projects_added), total_comments = sum(session_comments_given), total_likes = sum(session_likes_given), total_minutes = sum(sessionminute),total_inactive_minute = sum(inactiveminute)) %>%
+  arrange(desc(total_minutes))
+
+top_users_corr <- corrplot(cor(top_users_corr), method = "circle")
+
+summary(top_users_corr)
+```
+
+#### Linear regression
+
+```{r}
+linear.model <- lm(showwcase_sessions$sessionminute ~ showwcase_sessions$session_projects_added*showwcase_sessions$session_likes_given*showwcase_sessions$session_comments_given, data = showwcase_sessions,family="binomial")
+
+summary(linear.model)
+```
+
+#### How is session duration dependent on the features
+
+```{r}
+ggplot(top_users, aes(x=top_users$total_minutes)) + 
+  geom_line(aes(y = top_users$total_projects), color = "darkred") + 
+  geom_line(aes(y = top_users$total_comments), color="steelblue", linetype="twodash") + 
+  
+  geom_line(aes(y = top_users$total_likes), color="darkgreen", linetype="twodash") + 
+  
+  geom_line(aes(y = top_users$total_inactive_minute), color="pink", linetype="twodash") + xlab("Total session minutes") + ylab("No. of features added") + ggtitle("Features versus session duration") 
+```
+
+```{r}
+library(tidyr)
+gather_data <- top_users %>%
+  select(total_projects, total_comments, total_likes,total_minutes) %>%
+  gather(key = "variable", value = "value")
+head(gather_data)
+```
+
