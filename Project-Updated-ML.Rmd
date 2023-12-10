@@ -1,0 +1,130 @@
+---
+title: "Project - Apply ML techniques to predict absenteeism at work"
+author: "Vivek,Vinay,Kavin"
+date: "October 10, 2018"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library("dplyr")
+library("ggplot2")
+library("haven")
+library("plyr")
+library("tidyr")
+library(C50)
+library(gmodels)
+library("kernlab")
+library(rpart)
+library(rpart.plot)
+library(caret)
+library(naivebayes)
+library(corrplot)
+library(e1071)
+library(nnet)
+library(MASS)
+library(ggcorrplot)
+```
+
+#Introduction
+
+	
+
+#Related Work
+#Data Set  
+
+#Technical Approach
+
+
+#Loading the data and prepping the data as needed  
+```{r echo=FALSE,error=FALSE,warning=FALSE,message=FALSE}
+absent<-read.csv("c:/stored files/MS Analytics/Absenteeism_at_work_train.csv")
+str(absent)
+summary(absent)
+absent<-na.omit(absent)
+absent$Reason.for.absence <- factor(absent$Reason.for.absence) 
+absent$Month.of.absence <- factor(absent$Month.of.absence)
+absent$Day.of.the.week <- factor(absent$Day.of.the.week) 
+absent$Seasons <- factor(absent$Seasons)
+absent$Disciplinary.failure <- factor(absent$Disciplinary.failure)
+absent$Education <- factor(absent$Education)
+absent$Social.drinker <- factor(absent$Social.drinker)
+absent$Social.smoker <- factor(absent$Social.smoker)
+absent$AbsenteeismGroup<-as.factor(ifelse(absent$Absenteeism.time.in.hours == 0,0,ifelse(absent$Absenteeism.time.in.hours == 1,1,ifelse(absent$Absenteeism.time.in.hours == 2,2,ifelse(absent$Absenteeism.time.in.hours == 3,3,ifelse(absent$Absenteeism.time.in.hours == 4,4,ifelse(absent$Absenteeism.time.in.hours == 5,4,ifelse(absent$Absenteeism.time.in.hours == 6,4,ifelse(absent$Absenteeism.time.in.hours == 7,4,ifelse(absent$Absenteeism.time.in.hours == 8,5,6))))))))))                                                                       
+absent$Absenteeism.time.in.hours<-NULL
+absent$ID<-NULL
+absent$Work.load.Average.day<-NULL
+```  
+
+#Box Plots  
+```{r echo=FALSE,error=FALSE,warning=FALSE,message=FALSE}
+#x<-absent[,1:18]
+#y<-absent[,19]
+#par(mfrow=c(1,18))
+#for(i in 1:18) {
+#  if (is.factor(x[,i])) plot(x[,i],main=names(x)[i]) else
+#boxplot(x[,i], main=names(absent)[i])
+#}
+#plot(y)
+```
+
+#Checking for multicollinearity among the numeric variables  
+```{r echo=FALSE,error=FALSE,warning=FALSE,message=FALSE}
+data(absent)
+corr <- cor(absent[sapply(absent, is.numeric)])
+head(corr[, 1:6])
+ggcorrplot(corr,hc.order = TRUE,digits=1, lab = TRUE)
+absent$Body.mass.index<-NULL
+data(absent)
+corr <- cor(absent[sapply(absent, is.numeric)])
+ggcorrplot(corr,hc.order = TRUE,digits=1, lab = TRUE)
+set.seed(12345)
+absent_rand<-absent[order(runif(663)),]
+absent_train <- absent_rand[1:500, ]
+absent_test <- absent_rand[501:663, ]
+
+```
+
+#Run multiple-models and pick the one with the best accuracy  
+```{r echo=FALSE,error=FALSE,warning=FALSE,message=FALSE}
+control <- trainControl(method="cv", number=10)
+metric <- "Accuracy"
+set.seed(12345)
+fit.cart <- train(AbsenteeismGroup~., data=absent_train, method="rpart", metric=metric, preProcess = c("center", "scale"),trControl=control)
+set.seed(12345)
+fit.knn <- train(AbsenteeismGroup~., data=absent_train, method="knn", metric=metric, preProcess = c("center", "scale"),trControl=control)
+set.seed(12345)
+fit.svm <- train(AbsenteeismGroup~., data=absent_train, method="svmRadial", metric=metric, preProcess = c("center", "scale"),trControl=control)
+set.seed(12345)
+fit.nb <- train(AbsenteeismGroup~., data=absent_train, method="nb", preProcess = c("center", "scale"),metric=metric, trControl=control)
+results <- resamples(list(cart=fit.cart, knn=fit.knn, svm=fit.svm, nb=fit.nb))
+predict(fit.svm)
+summary(fit.svm)
+dotplot(results)
+summary(results)
+plot(fit.svm)
+predictions <- predict(fit.svm, absent_test)
+predictions
+confusionMatrix(predictions, absent_test$AbsenteeismGroup)
+set.seed(12345)
+tune.out <- tune(svm, AbsenteeismGroup~., data=absent_test, kernel="radial", ranges=list(cost=c(0.1, 1, 10, 100, 1000), gamma=c(0.5, 1, 2, 3, 4)))
+table(true=absent_test$AbsenteeismGroup, pred=predict(tune.out$best.model, newdata=absent_test))
+```  
+
+
+# Test and Evaluation:
+
+# Bibliography
+Karatzoglou, A., Smola, A., Hornik, K., & Zeileis, A. (2004). Kernlab - an S4 package for kernel methods in R. Journal of Statistical Software, 11 (9), 1-20. Retrieved from http://www.jstatsoft.org/v11/i09/
+Kuhn, M., & Quinlan, R. (2018). C50: C5.0 decision trees and rule-based models. Retrieved from https://CRAN.R-project.org/package=C50
+Investopedia (2013).The Causes And Costs Of Absenteeism In The Workplace. Retrieved from https://www.forbes.com/sites/investopedia/2013/07/10/the-causes-and-costs-of-absenteeism-in-the-workplace/#47447d033eb6
+https://www.racp.edu.au/docs/default-source/faculties-library/workplace-attendance-and-absenteeism.pdf?sfvrsn=4
+http://users.cecs.anu.edu.au/~Tom.Gedeon/conf/ABCs2018/paper/ABCs2018_paper_150.pdf
+
+
+
+
+

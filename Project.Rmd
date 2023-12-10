@@ -1,0 +1,237 @@
+---
+title: "Project - Apply ML techniques to predict absenteeism at work"
+author: "Vivek,Vinay,Kavin"
+date: "October 10, 2018"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library("dplyr")
+library("ggplot2")
+library("haven")
+library("plyr")
+library("tidyr")
+library(C50)
+library(gmodels)
+library("kernlab")
+library(rpart)
+library(rpart.plot)
+library(caret)
+library(naivebayes)
+library(corrplot)
+library(e1071)
+library(nnet)
+library(MASS)
+library(ggcorrplot)
+```
+
+#Introduction
+
+	Introduction, motivation and general description of the situation, problem or challenge. 
+	o What is the situation, problem or challenge you are addressing? 
+	Competitiveness, market share, professional development and personal support to community action, health, culture, education and sport, are linked to a promising new market. Coupled with the development of organizations, the pressure to achieve goals more audacious, employees increasingly overwhelmed, they end up buying some disturbance in the health-related type of labor activity. The objective of this project is to apply some machine learning algorithms in the prediction of absenteeism at work.
+	o What preliminary examination leads you to believe analytics could help? 
+	Companies, in today's digital world, are collecting data about their workforce. This data enables us to apply statistical methods in order to analyze and come up with recommendations that can be implemented by companies in order to reduce absenteeism at work.
+	o What are the shortcomings of the current work/analysis that analytics could help with? 
+ Majority of the work that's been done in the recent past has been to qualitatively address the issues of absenteeism and also identify and solve the root causes behind it. Analytics(with ML techniques) will help us address this issue quantitatively with pin-pointed recommendations around the factors that influence this issue
+
+
+#Related Work
+o Provide a thorough background for the project; e.g. about the situation, problem or challenge, about other companies that have undergone similar situations, problems or challenges and how they handled them or did not, etc. 
+The Gallup-Healthways Well-Being Index surveyed 94,000 workers across 14 major occupations in the U.S. Of the 77% of workers who fit the survey's definition of having a chronic health condition (asthma, cancer, depression, diabetes, heart attack, high blood pressure, high cholesterol or obesity), the total annual costs related to lost productivity totaled $84 billion. According to the survey, the annual costs associated with absenteeism vary by industry, with the greatest loss occurring in professional occupations (excluding nurses, physicians and teachers); the 14 occupations and corresponding costs of lost productivity are shown in Figure 1.
+
+
+ 
+Figure 1: Annual cost of lost productivity by major U.S. occupations
+
+Absenteeism is an especially difficult problem to tackle, because there are both legitimate and poor excuses for missing work - and it can be challenging for employers to effectively monitor, control and reduce absenteeism. Unless a company requires a written excuse from a doctor, for example, it can be difficult to determine if an employee is actually sick when missing work. At the same time, however, it is important for employers to consider the added costs associated with a sick employee who spreads an illness that gets the whole division - or a lot of customers - sick.
+To address problems like this, some companies, cities and states have moved toward a mandatory paid sick leave policy, where each employee receives a specified number of days each year to use when sick.
+
+In an effort to reduce absenteeism, some companies offer incentives for going to work, such as earned time off or lotteries for workers who do not have any unexcused absences within a certain period. Other firms might try a more proactive approach, putting policies in place to focus on responses to employee health concerns, including:
+a) Physical health
+b) Psychological health
+c) Work-home balance
+d) Environmental health
+e) Economic health
+	
+Absenteeism costs U.S. companies billions of dollars each year in lost productivity, wages, poor quality of goods/services and excess management time. In addition, the employees who do show up to work are often burdened with extra duties and responsibilities to fill in for absent employees, which can lead to feelings of frustration and a decline in morale.	
+	
+	o How does this project relate to other work that has been done on this situation, problem or challenge? 
+	There has been articles published in the past that have looked at absenteeism from a physical medicine perspective like the study by Australasian Faculty of Occupational Medicine which provided recommendations from a medicinal point of view.
+	Another article of interest was applying neural networks to predict absenteeism at work.
+	
+	In our project, we will try to predict the factors that most influence the absenteeism at work using a tree based classification.
+	o Provide the appropriate citations/references per the author instructions at: https://www.ieee.org/publications_standards/publications/authors/author_guide_interactive.pdf 
+
+#Data Set  
+o Give a complete description of the data you use during the project, including any you reject. 
+This study was carried out on a dataset containing information about the employees of a courier company in Brazil and the reasons relating to the absenteeism from work between July 2007 to July 2010. This dataset and its related information has been drawn from the UCI Machine Learning Repository (http://archive.ics.uci.edu/ml/datasets/Absenteeism+at+work). The dataset has 740 rows of data and 20 distinctive features (that may/may not relate to their absence from work) collected for 36 different employees during the said time. These features range from reason for absence, age, Body Mass Index (BMI) to service time, number of children and number of pets among others. The final output is given as the number of hours an employee was absent for each instance of their absence. A sample of the raw data can be seen in the table below - 
+Table 
+	Provide a detailed description of your data
+	Attribute Information:
+1. Individual identification (ID)
+2. Reason for absence (ICD).
+Absences attested by the International Code of Diseases (ICD) stratified into 21 categories (I to XXI) as follows:
+I Certain infectious and parasitic diseases
+II Neoplasms
+III Diseases of the blood and blood-forming organs and certain disorders involving the immune mechanism
+IV Endocrine, nutritional and metabolic diseases
+V Mental and behavioural disorders
+VI Diseases of the nervous system
+VII Diseases of the eye and adnexa
+ANLY 530 Late Summer 2018
+Course Project Instructions
+P a g e | 2
+VIII Diseases of the ear and mastoid process
+IX Diseases of the circulatory system
+X Diseases of the respiratory system
+XI Diseases of the digestive system
+XII Diseases of the skin and subcutaneous tissue
+XIII Diseases of the musculoskeletal system and connective tissue
+XIV Diseases of the genitourinary system
+XV Pregnancy, childbirth and the puerperium
+XVI Certain conditions originating in the perinatal period
+XVII Congenital malformations, deformations and chromosomal abnormalities
+XVIII Symptoms, signs and abnormal clinical and laboratory findings, not elsewhere classified
+XIX Injury, poisoning and certain other consequences of external causes
+XX External causes of morbidity and mortality
+XXI Factors influencing health status and contact with health services.
+. And 7 categories without (CID) patient follow-up (22), medical consultation (23), blood donation (24), laboratory examination (25), unjustified absence (26), physiotherapy (27), dental consultation (28).
+3. Month of absence
+4. Day of the week (Monday (2), Tuesday (3), Wednesday (4), Thursday (5), Friday (6))
+5. Seasons (summer (1), autumn (2), winter (3), spring (4))
+6. Transportation expense
+7. Distance from Residence to Work (kilometers)
+8. Service time
+9. Age
+10. Work load Average/day
+11. Hit target
+12. Disciplinary failure (yes=1; no=0)
+13. Education (high school (1), graduate (2), postgraduate (3), master and doctor (4))
+14. Son (number of children)
+15. Social drinker (yes=1; no=0)
+16. Social smoker (yes=1; no=0)
+17. Pet (number of pet)
+18. Weight
+19. Height
+20. Body mass index
+21. Absenteeism time in hours (target)
+	Provide any exploratory data analyses you complete
+
+The dataset is availabe for 
+free download at http://archive.ics.uci.edu/ml/datasets/Online+News+Popularity#. The dataset consists of 39,644 records and 61 fields. We will paritition the data into training and test set and also eliminate columns that are not revelnt and also factor columns as needed.
+
+#Technical Approach
+	o Give a detailed description of the process for your entire project. 
+ We have used the following ML techniques in order to analyze the data:
+a) Tree-based classification
+b) Support vector machines
+c) Naive Bayes
+
+	o Given a detailed description of your approach to the algorithm you have proposed. You do not have to describe well known approaches themselves, e.g. linear regression. You do have to describe how you applied the approach you used. 
+
+
+#Loading the data and prepping the data as needed  
+```{r echo=FALSE,error=FALSE,warning=FALSE,message=FALSE}
+absent<-read.csv("c:/stored files/MS Analytics/Absenteeism_at_work_train.csv")
+str(absent)
+summary(absent)
+absent<-na.omit(absent)
+absent$Reason.for.absence <- factor(absent$Reason.for.absence) 
+absent$Month.of.absence <- factor(absent$Month.of.absence)
+absent$Day.of.the.week <- factor(absent$Day.of.the.week) 
+absent$Seasons <- factor(absent$Seasons)
+absent$Disciplinary.failure <- factor(absent$Disciplinary.failure)
+absent$Education <- factor(absent$Education)
+absent$Social.drinker <- factor(absent$Social.drinker)
+absent$Social.smoker <- factor(absent$Social.smoker)
+absent$AbsenteeismGroup<-as.factor(ifelse(absent$Absenteeism.time.in.hours == 0,0,ifelse(absent$Absenteeism.time.in.hours == 1,1,ifelse(absent$Absenteeism.time.in.hours == 2,2,ifelse(absent$Absenteeism.time.in.hours == 3,3,ifelse(absent$Absenteeism.time.in.hours == 4,4,ifelse(absent$Absenteeism.time.in.hours == 5,4,ifelse(absent$Absenteeism.time.in.hours == 6,4,ifelse(absent$Absenteeism.time.in.hours == 7,4,ifelse(absent$Absenteeism.time.in.hours == 8,5,6))))))))))                                                                       
+absent$Absenteeism.time.in.hours<-NULL
+absent$ID<-NULL
+absent$Work.load.Average.day<-NULL
+```  
+
+#Box Plots  
+```{r echo=FALSE,error=FALSE,warning=FALSE,message=FALSE}
+x<-absent[,1:18]
+y<-absent[,19]
+par(mfrow=c(1,18))
+for(i in 1:18) {
+  if (is.factor(x[,i])) plot(x[,i],main=names(x)[i]) else
+boxplot(x[,i], main=names(absent)[i])
+}
+plot(y)
+```
+
+#Checking for multicollinearity among the numeric variables  
+```{r echo=FALSE,error=FALSE,warning=FALSE,message=FALSE}
+data(absent)
+corr <- cor(absent[sapply(absent, is.numeric)])
+head(corr[, 1:6])
+ggcorrplot(corr,hc.order = TRUE,digits=1, lab = TRUE)
+absent$Body.mass.index<-NULL
+data(absent)
+corr <- cor(absent[sapply(absent, is.numeric)])
+ggcorrplot(corr,hc.order = TRUE,digits=1, lab = TRUE)
+set.seed(12345)
+absent_rand<-absent[order(runif(663)),]
+absent_train <- absent_rand[1:500, ]
+absent_test <- absent_rand[501:663, ]
+
+```
+
+#Run multiple-models and pick the one with the best accuracy  
+```{r echo=FALSE,error=FALSE,warning=FALSE,message=FALSE}
+control <- trainControl(method="cv", number=10)
+metric <- "Accuracy"
+set.seed(12345)
+fit.cart <- train(AbsenteeismGroup~., data=absent_train, method="rpart", metric=metric, preProcess = c("center", "scale"),trControl=control)
+set.seed(12345)
+fit.knn <- train(AbsenteeismGroup~., data=absent_train, method="knn", metric=metric, preProcess = c("center", "scale"),trControl=control)
+set.seed(12345)
+fit.svm <- train(AbsenteeismGroup~., data=absent_train, method="svmRadial", metric=metric, preProcess = c("center", "scale"),trControl=control)
+set.seed(12345)
+fit.nb <- train(AbsenteeismGroup~., data=absent_train, method="nb", preProcess = c("center", "scale"),metric=metric, trControl=control)
+results <- resamples(list(cart=fit.cart, knn=fit.knn, svm=fit.svm, nb=fit.nb))
+predict(fit.svm)
+summary(fit.svm)
+dotplot(results)
+summary(results)
+plot(fit.svm)
+predictions <- predict(fit.svm, absent_test)
+predictions
+confusionMatrix(predictions, absent_test$AbsenteeismGroup)
+
+set.seed(12345)
+tune.out <- tune(svm, AbsenteeismGroup~., data=absent_test, kernel="radial", ranges=list(cost=c(0.1, 1, 10, 100, 1000), gamma=c(0.5, 1, 2, 3, 4)))
+table(true=absent_test$AbsenteeismGroup, pred=predict(tune.out$best.model, newdata=absent_test))
+summary(tune.out)
+```  
+
+
+# Test and Evaluation:
+
+o Describe how you test your approach to ensure that it is valid. 
+	o Discuss the validity of your approach. 
+	o Describe how you will evaluate your results and/or conclusions including any specific metrics, output data, completed analyses, etc. 
+	o Discuss the baseline you will use to compare your results to. 
+	o Discuss how well your approach worked to address the situation or challenge, solve the problem or answer the research question. 
+	o Discuss any potential future work. For example, if you were not able to resolve the situation or problem or answer the research question what will it take to do so? What else needs to be done? 
+	Evaluate and report whether or not someone unfamiliar with your work could accurately replicate it.
+
+
+# Bibliography
+Karatzoglou, A., Smola, A., Hornik, K., & Zeileis, A. (2004). Kernlab - an S4 package for kernel methods in R. Journal of Statistical Software, 11 (9), 1-20. Retrieved from http://www.jstatsoft.org/v11/i09/
+Kuhn, M., & Quinlan, R. (2018). C50: C5.0 decision trees and rule-based models. Retrieved from https://CRAN.R-project.org/package=C50
+Investopedia (2013).The Causes And Costs Of Absenteeism In The Workplace. Retrieved from https://www.forbes.com/sites/investopedia/2013/07/10/the-causes-and-costs-of-absenteeism-in-the-workplace/#47447d033eb6
+https://www.racp.edu.au/docs/default-source/faculties-library/workplace-attendance-and-absenteeism.pdf?sfvrsn=4
+http://users.cecs.anu.edu.au/~Tom.Gedeon/conf/ABCs2018/paper/ABCs2018_paper_150.pdf
+
+
+
+
+
